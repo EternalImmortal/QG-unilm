@@ -17,6 +17,8 @@ from torch.utils.data.distributed import DistributedSampler
 import random
 import pickle
 
+import sys 
+sys.path.append("..") 
 from pytorch_pretrained_bert.tokenization import BertTokenizer, WhitespaceTokenizer
 from pytorch_pretrained_bert.modeling import BertForSeq2SeqDecoder
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
