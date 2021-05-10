@@ -218,8 +218,10 @@ def main():
 
     args = parser.parse_args()
 
-    assert Path(args.model_recover_path).exists(
-    ), "--model_recover_path doesn't exist"
+    # assert Path(args.model_recover_path).exists(
+    # ), "--model_recover_path doesn't exist"
+    if args.model_recover_path:
+        logger.info('no fine-tuned model. Begin from pretrained bert.')
 
     args.output_dir = args.output_dir.replace(
         '[PT_OUTPUT_DIR]', os.getenv('PT_OUTPUT_DIR', ''))
