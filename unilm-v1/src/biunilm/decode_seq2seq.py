@@ -196,11 +196,14 @@ def main():
     print(args.model_recover_path)
 
     # 读取模型参数
-    for model_recover_path in glob.glob(args.model_recover_path.strip()):
-        logger.info("***** Recover model: %s *****", model_recover_path)
+    # 如果没有checkpoint，直接使用 Bert 预训练权重
 
-        if model_recover_path is not None:
+    # for model_recover_path in glob.glob(args.model_recover_path.strip()):
+    for i in range(1):
+        if args.model_recover_path is not None:
+            model_recover_path = glob.glob(args.model_recover_path.strip())[0]
             model_recover = torch.load(model_recover_path, map_location=device)
+            logger.info("***** Recover model: %s *****", model_recover_path)
         else:
             model_recover = None
         model = BertForSeq2SeqDecoder.from_pretrained(pretrained_model_name=args.bert_model,
