@@ -199,7 +199,10 @@ def main():
     for model_recover_path in glob.glob(args.model_recover_path.strip()):
         logger.info("***** Recover model: %s *****", model_recover_path)
 
-        model_recover = torch.load(model_recover_path, map_location=device)
+        if model_recover_path is not None:
+            model_recover = torch.load(model_recover_path, map_location=device)
+        else:
+            model_recover = None
         model = BertForSeq2SeqDecoder.from_pretrained(pretrained_model_name=args.bert_model,
                                                       state_dict=model_recover,
                                                       num_labels=cls_num_labels, num_rel=pair_num_relation,
