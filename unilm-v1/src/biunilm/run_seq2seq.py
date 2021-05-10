@@ -79,7 +79,7 @@ def main():
     parser.add_argument("--model_recover_path",
                         default=None,
                         type=str,
-                        required=True,
+                        required=False,
                         help="The file of fine-tuned pretraining model.")
     parser.add_argument("--optim_recover_path",
                         default=None,
