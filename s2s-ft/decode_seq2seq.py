@@ -20,8 +20,7 @@ from s2s_ft.modeling_decoding import BertForSeq2SeqDecoder, BertConfig
 from transformers.tokenization_bert import whitespace_tokenize
 import s2s_ft.s2s_loader as seq2seq_loader
 from s2s_ft.utils import load_and_cache_examples
-from transformers import \
-    BertTokenizer, RobertaTokenizer
+from transformers import BertTokenizer, RobertaTokenizer
 from s2s_ft.tokenization_unilm import UnilmTokenizer
 from s2s_ft.tokenization_minilm import MinilmTokenizer
 
@@ -31,6 +30,7 @@ TOKENIZER_CLASSES = {
     'roberta': RobertaTokenizer,
     'unilm': UnilmTokenizer,
 }
+
 
 class WhitespaceTokenizer(object):
     def tokenize(self, text):
@@ -70,8 +70,9 @@ def main():
                         help="Path to config.json for the model.")
 
     # tokenizer_name
-    parser.add_argument("--tokenizer_name", default=None, type=str, required=True, 
+    parser.add_argument("--tokenizer_name", default=None, type=str, required=True,
                         help="tokenizer name")
+
     parser.add_argument("--max_seq_length", default=512, type=int,
                         help="The maximum total input sequence length after WordPiece tokenization. \n"
                              "Sequences longer than this will be truncated, and sequences shorter \n"
@@ -134,6 +135,7 @@ def main():
         "cuda" if torch.cuda.is_available() else "cpu")
     n_gpu = torch.cuda.device_count()
 
+    # set random seed
     if args.seed > 0:
         random.seed(args.seed)
         np.random.seed(args.seed)
@@ -148,9 +150,10 @@ def main():
         torch.manual_seed(random_seed)
         if n_gpu > 0:
             torch.cuda.manual_seed_all(args.seed)
-    
+
+    # 分词
     tokenizer = TOKENIZER_CLASSES[args.model_type].from_pretrained(
-        args.tokenizer_name, do_lower_case=args.do_lower_case, 
+        args.tokenizer_name, do_lower_case=args.do_lower_case,
         cache_dir=args.cache_dir if args.cache_dir else None)
 
     if args.model_type == "roberta":
@@ -164,11 +167,12 @@ def main():
     logger.info("Read decoding config from: %s" % config_file)
     config = BertConfig.from_json_file(config_file)
 
+    # 初始化pipeline
     bi_uni_pipeline = []
     bi_uni_pipeline.append(seq2seq_loader.Preprocess4Seq2seqDecoder(
         list(vocab.keys()), tokenizer.convert_tokens_to_ids, args.max_seq_length,
         max_tgt_length=args.max_tgt_length, pos_shift=args.pos_shift,
-        source_type_id=config.source_type_id, target_type_id=config.target_type_id, 
+        source_type_id=config.source_type_id, target_type_id=config.target_type_id,
         cls_token=tokenizer.cls_token, sep_token=tokenizer.sep_token, pad_token=tokenizer.pad_token))
 
     mask_word_id, eos_word_ids, sos_word_id = tokenizer.convert_tokens_to_ids(
@@ -192,7 +196,7 @@ def main():
             length_penalty=args.length_penalty, eos_id=eos_word_ids, sos_id=sos_word_id,
             forbid_duplicate_ngrams=args.forbid_duplicate_ngrams, forbid_ignore_set=forbid_ignore_set,
             ngram_size=args.ngram_size, min_len=args.min_len, mode=args.mode,
-            max_position_embeddings=args.max_seq_length, pos_shift=args.pos_shift, 
+            max_position_embeddings=args.max_seq_length, pos_shift=args.pos_shift,
         )
 
         if args.fp16:
@@ -207,7 +211,7 @@ def main():
         max_src_length = args.max_seq_length - 2 - args.max_tgt_length
 
         to_pred = load_and_cache_examples(
-            args.input_file, tokenizer, local_rank=-1, 
+            args.input_file, tokenizer, local_rank=-1,
             cached_features_file=None, shuffle=False)
 
         input_lines = []
@@ -275,7 +279,7 @@ def main():
         if args.output_file:
             fn_out = args.output_file
         else:
-            fn_out = model_recover_path+'.'+args.split
+            fn_out = model_recover_path + '.' + args.split
         with open(fn_out, "w", encoding="utf-8") as fout:
             for l in output_lines:
                 fout.write(l)

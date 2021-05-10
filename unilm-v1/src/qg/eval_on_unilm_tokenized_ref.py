@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-__author__ = 'xinya'
+# __author__ = 'xinya'
 
 from bleu.bleu import Bleu
 from meteor.meteor import Meteor

@@ -9,7 +9,7 @@ import logging
 import glob
 import argparse
 import math
-from tqdm import tqdm, trange
+from tqdm import tqdm, trange  # 进度条
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, RandomSampler
@@ -17,15 +17,15 @@ from torch.utils.data.distributed import DistributedSampler
 import random
 import pickle
 
-import sys 
-sys.path.append("..") 
+import sys
+
+sys.path.append("..")
 from pytorch_pretrained_bert.tokenization import BertTokenizer, WhitespaceTokenizer
 from pytorch_pretrained_bert.modeling import BertForSeq2SeqDecoder
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
 
 from nn.data_parallel import DataParallelImbalance
 import biunilm.seq2seq_loader as seq2seq_loader
-
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -52,9 +52,11 @@ def main():
     parser = argparse.ArgumentParser()
 
     # Required parameters
+    # 选择bert模型
     parser.add_argument("--bert_model", default=None, type=str, required=True,
                         help="Bert pre-trained model selected in the list: bert-base-uncased, "
                              "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.")
+
     parser.add_argument("--model_recover_path", default=None, type=str,
                         help="The file of fine-tuned pretraining model.")
     parser.add_argument("--max_seq_length", default=512, type=int,
@@ -69,20 +71,24 @@ def main():
                         help="Using segment embedding for self-attention.")
 
     # decoding parameters
+    # the first 2 parameters need apex
     parser.add_argument('--fp16', action='store_true',
                         help="Whether to use 16-bit float precision instead of 32-bit")
     parser.add_argument('--amp', action='store_true',
                         help="Whether to use amp for fp16")
+
     parser.add_argument("--input_file", type=str, help="Input file")
     parser.add_argument('--subset', type=int, default=0,
                         help="Decode a subset of the input dataset.")
     parser.add_argument("--output_file", type=str, help="output file")
     parser.add_argument("--split", type=str, default="",
                         help="Data split (train/val/test).")
+    # 如果输入该参数，则说明input已经被分词
     parser.add_argument('--tokenized_input', action='store_true',
                         help="Whether the input is tokenized.")
     parser.add_argument('--seed', type=int, default=123,
                         help="random seed for initialization")
+    # 如果输入该参数，则说明模型不区分大小写
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
     parser.add_argument('--new_segment_ids', action='store_true',
@@ -135,17 +141,32 @@ def main():
     if n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
+    # 分词
     tokenizer = BertTokenizer.from_pretrained(
         args.bert_model, do_lower_case=args.do_lower_case)
 
     tokenizer.max_len = args.max_seq_length
 
     pair_num_relation = 0
+
+    # 初始化QG的总pipeline！
     bi_uni_pipeline = []
-    bi_uni_pipeline.append(seq2seq_loader.Preprocess4Seq2seqDecoder(list(tokenizer.vocab.keys()), tokenizer.convert_tokens_to_ids, args.max_seq_length, max_tgt_length=args.max_tgt_length, new_segment_ids=args.new_segment_ids,
-                                                                    mode="s2s", num_qkv=args.num_qkv, s2s_special_token=args.s2s_special_token, s2s_add_segment=args.s2s_add_segment, s2s_share_segment=args.s2s_share_segment, pos_shift=args.pos_shift))
+
+    # 添加预处理
+    bi_uni_pipeline.append(
+        seq2seq_loader.Preprocess4Seq2seqDecoder(vocab_words=list(tokenizer.vocab.keys()),
+                                                 indexer=tokenizer.convert_tokens_to_ids,
+                                                 max_len=args.max_seq_length,
+                                                 max_tgt_length=args.max_tgt_length,
+                                                 new_segment_ids=args.new_segment_ids,
+                                                 mode="s2s",
+                                                 num_qkv=args.num_qkv,
+                                                 s2s_special_token=args.s2s_special_token,
+                                                 s2s_add_segment=args.s2s_add_segment,
+                                                 s2s_share_segment=args.s2s_share_segment, pos_shift=args.pos_shift))
 
     amp_handle = None
+    # 是否采用半精度
     if args.fp16 and args.amp:
         from apex import amp
         amp_handle = amp.init(enable_caching=True)
@@ -153,10 +174,9 @@ def main():
 
     # Prepare model
     cls_num_labels = 2
-    type_vocab_size = 6 + \
-        (1 if args.s2s_add_segment else 0) if args.new_segment_ids else 2
-    mask_word_id, eos_word_ids, sos_word_id = tokenizer.convert_tokens_to_ids(
-        ["[MASK]", "[SEP]", "[S2S_SOS]"])
+    type_vocab_size = 6 + (1 if args.s2s_add_segment else 0) if args.new_segment_ids else 2
+    # 102, 103, 18
+    mask_word_id, eos_word_ids, sos_word_id = tokenizer.convert_tokens_to_ids(["[MASK]", "[SEP]", "[S2S_SOS]"])
 
     def _get_token_id_set(s):
         r = None
@@ -170,14 +190,30 @@ def main():
             r = set(tokenizer.convert_tokens_to_ids(w_list))
         return r
 
+    # 获取需要排除的token
     forbid_ignore_set = _get_token_id_set(args.forbid_ignore_word)
     not_predict_set = _get_token_id_set(args.not_predict_token)
     print(args.model_recover_path)
+
+    # 读取模型参数
     for model_recover_path in glob.glob(args.model_recover_path.strip()):
         logger.info("***** Recover model: %s *****", model_recover_path)
-        model_recover = torch.load(model_recover_path)
-        model = BertForSeq2SeqDecoder.from_pretrained(args.bert_model, state_dict=model_recover, num_labels=cls_num_labels, num_rel=pair_num_relation, type_vocab_size=type_vocab_size, task_idx=3, mask_word_id=mask_word_id, search_beam_size=args.beam_size,
-                                                      length_penalty=args.length_penalty, eos_id=eos_word_ids, sos_id=sos_word_id, forbid_duplicate_ngrams=args.forbid_duplicate_ngrams, forbid_ignore_set=forbid_ignore_set, not_predict_set=not_predict_set, ngram_size=args.ngram_size, min_len=args.min_len, mode=args.mode, max_position_embeddings=args.max_seq_length, ffn_type=args.ffn_type, num_qkv=args.num_qkv, seg_emb=args.seg_emb, pos_shift=args.pos_shift)
+
+        model_recover = torch.load(model_recover_path, map_location=device)
+        model = BertForSeq2SeqDecoder.from_pretrained(pretrained_model_name=args.bert_model,
+                                                      state_dict=model_recover,
+                                                      num_labels=cls_num_labels, num_rel=pair_num_relation,
+                                                      type_vocab_size=type_vocab_size, task_idx=3,
+                                                      mask_word_id=mask_word_id, search_beam_size=args.beam_size,
+                                                      length_penalty=args.length_penalty, eos_id=eos_word_ids,
+                                                      sos_id=sos_word_id,
+                                                      forbid_duplicate_ngrams=args.forbid_duplicate_ngrams,
+                                                      forbid_ignore_set=forbid_ignore_set,
+                                                      not_predict_set=not_predict_set, ngram_size=args.ngram_size,
+                                                      min_len=args.min_len, mode=args.mode,
+                                                      max_position_embeddings=args.max_seq_length,
+                                                      ffn_type=args.ffn_type, num_qkv=args.num_qkv,
+                                                      seg_emb=args.seg_emb, pos_shift=args.pos_shift)
         del model_recover
 
         if args.fp16:
@@ -189,6 +225,8 @@ def main():
         torch.cuda.empty_cache()
         model.eval()
         next_i = 0
+
+        # 因为是合并成一排进行编码，同时还需要减[sos] [eos]token
         max_src_length = args.max_seq_length - 2 - args.max_tgt_length
 
         with open(args.input_file, encoding="utf-8") as fin:
@@ -205,7 +243,7 @@ def main():
         score_trace_list = [None] * len(input_lines)
         total_batch = math.ceil(len(input_lines) / args.batch_size)
 
-        with tqdm(total=total_batch) as pbar:
+        with tqdm(total=total_batch) as bar:
             while next_i < len(input_lines):
                 _chunk = input_lines[next_i:next_i + args.batch_size]
                 buf_id = [x[0] for x in _chunk]
@@ -242,11 +280,11 @@ def main():
                         if args.need_score_traces:
                             score_trace_list[buf_id[i]] = {
                                 'scores': traces['scores'][i], 'wids': traces['wids'][i], 'ptrs': traces['ptrs'][i]}
-                pbar.update(1)
+                bar.update(1)
         if args.output_file:
             fn_out = args.output_file
         else:
-            fn_out = model_recover_path+'.'+args.split
+            fn_out = model_recover_path + '.' + args.split
         with open(fn_out, "w", encoding="utf-8") as fout:
             for l in output_lines:
                 fout.write(l)
