@@ -32,7 +32,8 @@ class LabelSmoothingLoss(_Loss):
     and p_{prob. computed by model}(w) is minimized.
     """
 
-    def __init__(self, label_smoothing=0, tgt_vocab_size=0, ignore_index=0, size_average=None, reduce=None, reduction='mean'):
+    def __init__(self, label_smoothing=0, tgt_vocab_size=0, ignore_index=0, size_average=None, reduce=None,
+                 reduction='mean'):
         assert 0.0 < label_smoothing <= 1.0
         self.ignore_index = ignore_index
         super(LabelSmoothingLoss, self).__init__(
@@ -62,6 +63,7 @@ class LabelSmoothingLoss(_Loss):
         model_prob.masked_fill_((target == self.ignore_index).unsqueeze(1), 0)
 
         return F.kl_div(output, model_prob, reduction='none').view(batch_size, num_pos, -1).sum(2)
+
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +124,7 @@ class BertConfig(object):
                  label_smoothing=None,
                  num_qkv=0,
                  seg_emb=False,
-                 source_type_id=0, 
+                 source_type_id=0,
                  target_type_id=1,
                  no_segment_embedding=False, **kwargs):
         """Constructs BertConfig.
@@ -1115,7 +1117,7 @@ class BertForPreTrainingLossMask(PreTrainedBertModel):
 
             attention_mask_task_0 = (
                                             index_matrix < num_tokens.view(-1, 1, 1)) & (
-                                                index_matrix_t < num_tokens.view(-1, 1, 1))
+                                            index_matrix_t < num_tokens.view(-1, 1, 1))
             attention_mask_task_1 = tril & attention_mask_task_0
             attention_mask_task_2 = torch.transpose(
                 tril, dim0=-2, dim1=-1) & attention_mask_task_0
@@ -1382,7 +1384,8 @@ class BertForSeq2SeqDecoder(PreTrainedBertModel):
 
     def forward(self, input_ids, token_type_ids, position_ids, attention_mask, task_idx=None, mask_qkv=None):
         if self.search_beam_size > 1:
-            return self.beam_search(input_ids, token_type_ids, position_ids, attention_mask, task_idx=task_idx, mask_qkv=mask_qkv)
+            return self.beam_search(input_ids, token_type_ids, position_ids, attention_mask, task_idx=task_idx,
+                                    mask_qkv=mask_qkv)
 
         input_shape = list(input_ids.size())
         batch_size = input_shape[0]
@@ -1413,13 +1416,14 @@ class BertForSeq2SeqDecoder(PreTrainedBertModel):
                 start_pos = next_pos - curr_length
                 x_input_ids = torch.cat((curr_ids, mask_ids), dim=1)
 
-            curr_token_type_ids = token_type_ids[:, start_pos:next_pos+1]
+            curr_token_type_ids = token_type_ids[:, start_pos:next_pos + 1]
             curr_attention_mask = attention_mask[:,
-                                                 start_pos:next_pos+1, :next_pos+1]
-            curr_position_ids = position_ids[:, start_pos:next_pos+1]
+                                  start_pos:next_pos + 1, :next_pos + 1]
+            curr_position_ids = position_ids[:, start_pos:next_pos + 1]
             new_embedding, new_encoded_layers, _ = \
                 self.bert(x_input_ids, curr_token_type_ids, curr_position_ids, curr_attention_mask,
-                          output_all_encoded_layers=True, prev_embedding=prev_embedding, prev_encoded_layers=prev_encoded_layers, mask_qkv=mask_qkv)
+                          output_all_encoded_layers=True, prev_embedding=prev_embedding,
+                          prev_encoded_layers=prev_encoded_layers, mask_qkv=mask_qkv)
 
             last_hidden = new_encoded_layers[-1][:, -1:, :]
             prediction_scores, _ = self.cls(

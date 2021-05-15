@@ -1,7 +1,6 @@
 from io import open
 from setuptools import find_packages, setup
 
-
 extras = {
     'serving': ['pydantic', 'uvicorn', 'fastapi'],
     'serving-tf': ['pydantic', 'uvicorn', 'fastapi'],
@@ -34,6 +33,6 @@ setup(
     extras_require=extras,
     python_requires='>=3.5.0',
     classifiers=[
-          'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3',
     ],
 )

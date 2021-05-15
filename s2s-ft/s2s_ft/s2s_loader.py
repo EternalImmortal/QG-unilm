@@ -7,12 +7,11 @@ import logging
 import torch
 import torch.utils.data
 
-
 logger = logging.getLogger(__name__)
 
 
 def get_random_word(vocab_words):
-    i = randint(0, len(vocab_words)-1)
+    i = randint(0, len(vocab_words) - 1)
     return vocab_words[i]
 
 
@@ -74,8 +73,8 @@ class Pipeline():
 class Preprocess4Seq2seqDecoder(Pipeline):
     """ Pre-processing steps for pretraining transformer """
 
-    def __init__(self, vocab_words, indexer, max_len=512, max_tgt_length=128, 
-                 mode="s2s", pos_shift=False, source_type_id=0, target_type_id=1, 
+    def __init__(self, vocab_words, indexer, max_len=512, max_tgt_length=128,
+                 mode="s2s", pos_shift=False, source_type_id=0, target_type_id=1,
                  cls_token='[CLS]', sep_token='[SEP]', pad_token='[PAD]'):
         super().__init__()
         self.max_len = max_len
@@ -83,7 +82,7 @@ class Preprocess4Seq2seqDecoder(Pipeline):
         self.indexer = indexer  # function from token to token index
         self.max_len = max_len
         self._tril_matrix = torch.tril(torch.ones((max_len, max_len), dtype=torch.long))
-        self.task_idx = 3   # relax projection layer for different tasks
+        self.task_idx = 3  # relax projection layer for different tasks
         assert mode in ("s2s", "l2r")
         self.mode = mode
         self.max_tgt_length = max_tgt_length
@@ -105,13 +104,13 @@ class Preprocess4Seq2seqDecoder(Pipeline):
         assert len(padded_tokens_a) <= max_a_len + 2
         if max_a_len + 2 > len(padded_tokens_a):
             padded_tokens_a += [self.pad_token] * \
-                (max_a_len + 2 - len(padded_tokens_a))
+                               (max_a_len + 2 - len(padded_tokens_a))
         assert len(padded_tokens_a) == max_a_len + 2
         max_len_in_batch = min(self.max_tgt_length +
                                max_a_len + 2, self.max_len)
         tokens = padded_tokens_a
         segment_ids = [self.source_type_id] * (len(padded_tokens_a)) \
-                + [self.target_type_id] * (max_len_in_batch - len(padded_tokens_a))
+                      + [self.target_type_id] * (max_len_in_batch - len(padded_tokens_a))
 
         mask_qkv = None
 
@@ -134,15 +133,15 @@ class Preprocess4Seq2seqDecoder(Pipeline):
         input_mask = torch.zeros(
             max_len_in_batch, max_len_in_batch, dtype=torch.long)
         if self.mode == "s2s":
-            input_mask[:, :len(tokens_a)+2].fill_(1)
+            input_mask[:, :len(tokens_a) + 2].fill_(1)
         else:
             st, end = 0, len(tokens_a) + 2
             input_mask[st:end, st:end].copy_(
                 self._tril_matrix[:end, :end])
-            input_mask[end:, :len(tokens_a)+2].fill_(1)
+            input_mask[end:, :len(tokens_a) + 2].fill_(1)
         second_st, second_end = len(padded_tokens_a), max_len_in_batch
 
         input_mask[second_st:second_end, second_st:second_end].copy_(
-            self._tril_matrix[:second_end-second_st, :second_end-second_st])
+            self._tril_matrix[:second_end - second_st, :second_end - second_st])
 
         return (input_ids, segment_ids, position_ids, input_mask, mask_qkv, self.task_idx)

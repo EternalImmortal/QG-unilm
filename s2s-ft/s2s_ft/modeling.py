@@ -35,6 +35,7 @@ MINILM_PRETRAINED_MODEL_ARCHIVE_MAP = {
     'minilm-l12-h384-uncased': "https://unilm.blob.core.windows.net/ckpt/minilm-l12-h384-uncased.bin",
 }
 
+
 class BertPreTrainedForSeq2SeqModel(BertPreTrainedModel):
     """ An abstract class to handle weights initialization and
         a simple interface for dowloading and loading pretrained models.
@@ -43,17 +44,17 @@ class BertPreTrainedForSeq2SeqModel(BertPreTrainedModel):
     supported_convert_pretrained_model_archive_map = {
         "bert": BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
         "roberta": ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP,
-        "xlm-roberta": XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP, 
-        "unilm": UNILM_PRETRAINED_MODEL_ARCHIVE_MAP, 
-        "minilm": MINILM_PRETRAINED_MODEL_ARCHIVE_MAP, 
+        "xlm-roberta": XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP,
+        "unilm": UNILM_PRETRAINED_MODEL_ARCHIVE_MAP,
+        "minilm": MINILM_PRETRAINED_MODEL_ARCHIVE_MAP,
     }
     base_model_prefix = "bert_for_seq2seq"
     pretrained_model_archive_map = {
         **ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP,
-        **XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP, 
+        **XLM_ROBERTA_PRETRAINED_MODEL_ARCHIVE_MAP,
         **BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
         **UNILM_PRETRAINED_MODEL_ARCHIVE_MAP,
-        **MINILM_PRETRAINED_MODEL_ARCHIVE_MAP, 
+        **MINILM_PRETRAINED_MODEL_ARCHIVE_MAP,
     }
 
     def _init_weights(self, module):
@@ -148,6 +149,7 @@ class BertPreTrainedForSeq2SeqModel(BertPreTrainedModel):
 class BertEmbeddings(nn.Module):
     """Construct the embeddings from word, position and token_type embeddings.
     """
+
     def __init__(self, config):
         super(BertEmbeddings, self).__init__()
         self.word_embeddings = nn.Embedding(config.vocab_size, config.hidden_size, padding_idx=0)
@@ -271,7 +273,7 @@ class BertSelfAttention(nn.Module):
                 outputs.append(self.multi_head_attention(
                     query, key, value, attention_mask[:, :, sum_length - part_length: sum_length, :sum_length]
                 )[0])
-            outputs = (torch.cat(outputs, dim=1), )
+            outputs = (torch.cat(outputs, dim=1),)
         else:
             outputs = self.multi_head_attention(
                 mixed_query_layer, mixed_key_layer, mixed_value_layer, attention_mask)
@@ -372,6 +374,7 @@ class BertModel(BertPreTrainedForSeq2SeqModel):
         last_hidden_states = outputs[0]  # The last hidden-state is the first element of the output tuple
 
     """
+
     def __init__(self, config):
         super(BertModel, self).__init__(config)
         self.config = config
@@ -420,7 +423,7 @@ class BertModel(BertPreTrainedForSeq2SeqModel):
             embedding_output, attention_mask=extended_attention_mask, split_lengths=split_lengths)
         sequence_output = encoder_outputs[0]
 
-        outputs = (sequence_output, ) + encoder_outputs[1:]  # add hidden_states and attentions if they are here
+        outputs = (sequence_output,) + encoder_outputs[1:]  # add hidden_states and attentions if they are here
         return outputs  # sequence_output, pooled_output, (hidden_states), (attentions)
 
 
@@ -431,7 +434,8 @@ class LabelSmoothingLoss(_Loss):
     and p_{prob. computed by model}(w) is minimized.
     """
 
-    def __init__(self, label_smoothing=0, tgt_vocab_size=0, ignore_index=0, size_average=None, reduce=None, reduction='mean'):
+    def __init__(self, label_smoothing=0, tgt_vocab_size=0, ignore_index=0, size_average=None, reduce=None,
+                 reduction='mean'):
         assert 0.0 < label_smoothing <= 1.0
         self.ignore_index = ignore_index
         super(LabelSmoothingLoss, self).__init__(

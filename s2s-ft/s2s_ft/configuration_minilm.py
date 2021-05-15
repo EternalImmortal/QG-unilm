@@ -80,7 +80,7 @@ class MinilmConfig(PretrainedConfig):
                  type_vocab_size=6,
                  initializer_range=0.02,
                  layer_norm_eps=1e-12,
-                 source_type_id=0, 
+                 source_type_id=0,
                  target_type_id=1,
                  **kwargs):
         super(MinilmConfig, self).__init__(**kwargs)

@@ -34,7 +34,6 @@ from s2s_ft.config import BertForSeq2SeqConfig
 
 logger = logging.getLogger(__name__)
 
-
 MODEL_CLASSES = {
     'bert': (BertConfig, BertTokenizer),
     'minilm': (MinilmConfig, MinilmTokenizer),
@@ -109,7 +108,7 @@ def train(args, training_features, model, tokenizer):
         per_node_train_batch_size = args.per_gpu_train_batch_size * args.gradient_accumulation_steps
     else:
         per_node_train_batch_size = args.per_gpu_train_batch_size * args.n_gpu * args.gradient_accumulation_steps
-        
+
     train_batch_size = per_node_train_batch_size * (torch.distributed.get_world_size() if args.local_rank != -1 else 1)
     global_step = recover_step if recover_step else 0
 
@@ -211,12 +210,11 @@ def train(args, training_features, model, tokenizer):
 
                 if args.local_rank in [-1, 0] and args.save_steps > 0 and \
                         (global_step % args.save_steps == 0 or global_step == args.num_training_steps):
-
                     save_path = os.path.join(args.output_dir, "ckpt-%d" % global_step)
                     os.makedirs(save_path, exist_ok=True)
                     model_to_save = model.module if hasattr(model, "module") else model
                     model_to_save.save_pretrained(save_path)
-                    
+
                     # optim_to_save = {
                     #     "optimizer": optimizer.state_dict(),
                     #     "lr_scheduler": scheduler.state_dict(),

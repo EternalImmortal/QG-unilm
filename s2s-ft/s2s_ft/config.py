@@ -30,7 +30,7 @@ class BertForSeq2SeqConfig(BertConfig):
         if isinstance(config, RobertaConfig):
             kwargs["type_vocab_size"] = 0
             kwargs["max_position_embeddings"] = kwargs["max_position_embeddings"] - 2
-        
+
         additional_keys = [
             "source_type_id", "target_type_id"
         ]

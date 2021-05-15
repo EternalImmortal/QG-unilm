@@ -38,13 +38,13 @@ VOCAB_FILES_NAMES = {'vocab_file': 'vocab.txt'}
 
 PRETRAINED_VOCAB_FILES_MAP = {
     'vocab_file':
-    {
-        'unilm-large-cased': "https://unilm.blob.core.windows.net/ckpt/unilm-large-cased-vocab.txt",
-        'unilm-base-cased': "https://unilm.blob.core.windows.net/ckpt/unilm-base-cased-vocab.txt",
-        'unilm1-large-cased': "https://unilm.blob.core.windows.net/ckpt/unilm1-large-cased-vocab.txt",
-        'unilm1-base-cased': "https://unilm.blob.core.windows.net/ckpt/unilm1-base-cased-vocab.txt",
-        'unilm1.2-base-uncased': "https://unilm.blob.core.windows.net/ckpt/unilm1.2-base-uncased-vocab.txt"
-    }
+        {
+            'unilm-large-cased': "https://unilm.blob.core.windows.net/ckpt/unilm-large-cased-vocab.txt",
+            'unilm-base-cased': "https://unilm.blob.core.windows.net/ckpt/unilm-base-cased-vocab.txt",
+            'unilm1-large-cased': "https://unilm.blob.core.windows.net/ckpt/unilm1-large-cased-vocab.txt",
+            'unilm1-base-cased': "https://unilm.blob.core.windows.net/ckpt/unilm1-base-cased-vocab.txt",
+            'unilm1.2-base-uncased': "https://unilm.blob.core.windows.net/ckpt/unilm1.2-base-uncased-vocab.txt"
+        }
 }
 
 PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {

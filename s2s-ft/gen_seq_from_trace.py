@@ -11,12 +11,10 @@ from transformers import BertTokenizer, RobertaTokenizer
 from s2s_ft.tokenization_unilm import UnilmTokenizer
 from s2s_ft.tokenization_minilm import MinilmTokenizer
 
-
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 TOKENIZER_CLASSES = {
     'bert': BertTokenizer,
@@ -65,7 +63,7 @@ def get_best_sequence(sample, eos_id, pad_id, length_penalty=None, alpha=None, e
                 s = scores[fid][i]
                 if length_penalty:
                     if expect:
-                        s -= length_penalty * math.fabs(fid+1 - expect)
+                        s -= length_penalty * math.fabs(fid + 1 - expect)
                     else:
                         s += length_penalty * (fid + 1)
                 elif alpha:
@@ -99,7 +97,8 @@ def detokenize(tk_list):
 
 def simple_postprocess(tk_list):
     # truncate duplicate punctuations
-    while tk_list and len(tk_list) > 4 and len(tk_list[-1]) == 1 and unicodedata.category(tk_list[-1]).startswith('P') and all(it == tk_list[-1] for it in tk_list[-4:]):
+    while tk_list and len(tk_list) > 4 and len(tk_list[-1]) == 1 and unicodedata.category(tk_list[-1]).startswith(
+            'P') and all(it == tk_list[-1] for it in tk_list[-4:]):
         tk_list = tk_list[:-3]
     return tk_list
 
@@ -110,7 +109,7 @@ def simple_postprocess(tk_list):
 
 def main(args):
     tokenizer = TOKENIZER_CLASSES[args.model_type].from_pretrained(
-        args.tokenizer_name, do_lower_case=args.do_lower_case, 
+        args.tokenizer_name, do_lower_case=args.do_lower_case,
         cache_dir=args.cache_dir if args.cache_dir else None)
     eos_token = tokenizer.sep_token
     pad_token = tokenizer.pad_token
@@ -122,10 +121,10 @@ def main(args):
     logger.info("*********************************************")
 
     for input_file in tqdm(glob.glob(args.input)):
-        if not Path(input_file+'.trace.pickle').exists():
+        if not Path(input_file + '.trace.pickle').exists():
             continue
         print(input_file)
-        samples = read_traces_from_file(input_file+'.trace.pickle')
+        samples = read_traces_from_file(input_file + '.trace.pickle')
 
         results = []
 
@@ -150,18 +149,19 @@ def main(args):
 
         fn_out = input_file + '.'
         if args.length_penalty:
-            fn_out += 'lenp'+str(args.length_penalty)
+            fn_out += 'lenp' + str(args.length_penalty)
         if args.expect:
-            fn_out += 'exp'+str(args.expect)
+            fn_out += 'exp' + str(args.expect)
         if args.alpha:
-            fn_out += 'alp'+str(args.alpha)
+            fn_out += 'alp' + str(args.alpha)
         if args.min_len:
-            fn_out += 'minl'+str(args.min_len)
+            fn_out += 'minl' + str(args.min_len)
         with open(fn_out, "w", encoding="utf-8") as fout:
             for line in results:
                 fout.write(line)
                 fout.write("\n")
         logger.info("Output file = [%s]" % fn_out)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -174,7 +174,7 @@ if __name__ == "__main__":
                         help="Expectation of target length.")
     parser.add_argument("--min_len", default=None, type=int)
     # tokenizer_name
-    parser.add_argument("--tokenizer_name", default=None, type=str, required=True, 
+    parser.add_argument("--tokenizer_name", default=None, type=str, required=True,
                         help="tokenizer name")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")

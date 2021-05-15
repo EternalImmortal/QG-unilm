@@ -9,7 +9,6 @@ import torch
 import tqdm
 import torch.utils.data
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +16,7 @@ class Seq2seqDatasetForBert(torch.utils.data.Dataset):
     def __init__(
             self, features, max_source_len, max_target_len,
             vocab_size, cls_id, sep_id, pad_id, mask_id,
-            random_prob, keep_prob, offset, num_training_instances, 
+            random_prob, keep_prob, offset, num_training_instances,
             span_len=1, span_prob=1.0):
         self.features = features
         self.max_source_len = max_source_len
@@ -142,9 +141,9 @@ def load_and_cache_examples(
                 source_tokens = tokenizer.tokenize(example["src"])
                 target_tokens = tokenizer.tokenize(example["tgt"])
             features.append({
-                    "source_ids": tokenizer.convert_tokens_to_ids(source_tokens),
-                    "target_ids": tokenizer.convert_tokens_to_ids(target_tokens),
-                })
+                "source_ids": tokenizer.convert_tokens_to_ids(source_tokens),
+                "target_ids": tokenizer.convert_tokens_to_ids(target_tokens),
+            })
 
         if shuffle:
             random.shuffle(features)
